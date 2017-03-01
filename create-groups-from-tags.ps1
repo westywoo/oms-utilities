@@ -1,6 +1,19 @@
 ﻿# to use a profile, setup a service principal as follows
 # https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-authenticate-service-principal
 
+# TODO configure OMS Workspace name and resource group here
+$wn="mike-demo" # from the Portal, Log Analytics
+$rg = "mms-weu" # from the Portal, Log Analytics
+
+# TODO define the output file and folder here
+$cwd = "C:\Users\miwestaw\Data\azure\"
+$cmdscript = "my-create-groups-script.ps1"
+
+# TODO set your category here
+$groupCategory="My Computer Groups"
+
+##################################
+
 Select-AzureRmProfile -Path C:\Users\miwestaw\Data\azure\MyAzureRmProfile20170227.json
 
 $groups = Get-AzureRmResourceGroup
@@ -9,6 +22,10 @@ $groups = Get-AzureRmResourceGroup
 # https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-using-tags
 
 $etag=Get-Date -Format yyyy-MM-ddThh:mm:ss.msZ
+
+# these are examples that will be set lower down
+# see https://docs.microsoft.com/en-us/azure/log-analytics/log-analytics-log-search-api
+#
 #$groupName="My Computer Group"
 #$groupQuery = "Computer=*jump* | Distinct Computer"
 #$groupCategory="My Computer Groups"
@@ -21,8 +38,9 @@ $ght = @{}
 foreach ($g in $groups) {
     $resources = Find-AzureRmResource -ResourceGroupNameEquals $g.ResourceGroupName
     foreach ($r in $resources) {
+        # currently working with VirtualMachines - add extra types to this if {}
         if ($r.ResourceType.Equals("Microsoft.Compute/virtualMachines")) {
-            if (!$r.tags.keys.Count.Equals(0)) {
+            if (!$r.tags.keys.Count.Equals(0)) { # only work with tagged VMs..
                 "=============="
                 $r.Name
                 $r.ResourceType
@@ -60,8 +78,6 @@ foreach ($g in $groups) {
 #displayName_DomainControllerVM {XA-DC}                                                                                                         
 #owner_miwestaw                 {JumpBox}                                                                                                       
 
-$cwd = "C:\Users\miwestaw\Data\azure\"
-$cmdscript = "my-create-groups-script.ps1"
 $filename = $cwd + $cmdscript
 out-file $filename
 
@@ -78,8 +94,8 @@ foreach ($key in $ght.Keys) {
 
   $groupName=$key
   $groupQuery = "Computer IN {"+$valuesJson+"} | distinct Computer"
-  $groupCategory="My Computer Groups"
   $groupID = $groupCategory + " | " + $groupName
+  # note the use of single quotes so that the backtick is passed through literally
   $groupJson = "{'etag': 'W/"+'`"' + "datetime\'" + $etag + "\'" + '`"' + "', 'properties': { 'Category': '" + $groupCategory + "', 'DisplayName':'"  + $groupName + "', 'Query':'" + $groupQuery + "', 'Tags': [{'Name': 'Group', 'Value': 'Computer'}], 'Version':'1'  }"
   #$groupJson = "{'etag': 'W/`"datetime\'" + $etag + "\'`"', 'properties': { 'Category': '" + $groupCategory + "', 'DisplayName':'"  + $groupName + "', 'Query':'" + $groupQuery + "', 'Tags': [{'Name': 'Group', 'Value': 'Computer'}], 'Version':'1'  }"
   #$groupJson = "{'properties': { 'Category': '" + $groupCategory + "', 'DisplayName':'"  + $groupName + "', 'Query':'" + $groupQuery + "', 'Tags': [{'Name': 'Group', 'Value': 'Computer'}], 'Version':'1'  }"
@@ -92,8 +108,6 @@ foreach ($key in $ght.Keys) {
   # https://github.com/projectkudu/ARMClient
 
   $subscriptionid = (get-AzureRmSubscription).SubscriptionId
-  $wn="mike-demo" # from the Portal, Log Analytics
-  $rg = "mms-weu" # from the Portal, Log Analytics
 
   # write the commans to file so they can be checked before execution
   '$groupId="'+$groupId+'"' | Out-File -Append $filename
