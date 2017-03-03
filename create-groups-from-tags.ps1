@@ -1,5 +1,8 @@
 ﻿# to use a profile, setup a service principal as follows
 # https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-authenticate-service-principal
+Select-AzureRmProfile -Path C:\Users\miwestaw\Data\azure\MyAzureRmProfile20170227.json
+# alternatively..
+# Login-AzureRmAccount
 
 # TODO configure OMS Workspace name and resource group here
 $wn="mike-demo" # from the Portal, Log Analytics
@@ -13,8 +16,6 @@ $cmdscript = "my-create-groups-script.ps1"
 $groupCategory="My Computer Groups"
 
 ##################################
-
-Select-AzureRmProfile -Path C:\Users\miwestaw\Data\azure\MyAzureRmProfile20170227.json
 
 $groups = Get-AzureRmResourceGroup
 
@@ -47,7 +48,8 @@ foreach ($g in $groups) {
                 $r.tags.keys.Count
                 foreach ($key in $r.tags.keys) {
                     $htKey = $key + "_" + $r.tags.Get_Item($key)
-                    $htValue = $r.name
+                    #$htValue = $r.name
+                    $htvalue = (Get-azurermvm -ResourceGroupName $g.ResourceGroupName -name $r.name).OSProfile.ComputerName
                     if ($ght.ContainsKey($htKey)) {
                         # add the value to this key
                         $valuesList = $ght.get_item($htKey)
